@@ -1,0 +1,24 @@
+* psi4 has issues writing the molden file for some benzene rings,
+   check the git version.   
+* Generalize the reader with the new formula in gnorm
+-- Order of the primitives in the common and apply it to 
+   terachem, gaussian and other.   
+* spherical to cartesian transformation. Check psi4/fchk.
+* multiwfn... take a look at the code
+* fix poisson's nl and nr... good nr and nl for all atoms (see numol)
+* lmax/nwav correctly set
+* improve poisson routine, parallelize
+* improve exact exchange routine, parallelize
+   
+* what happens with een? (see numol)
+  -- calculate 1-e integrals?
+* occ(orbs) -> occ(orbs,spin)
+* libxc spinpolarized in energy.f90
+* other definitions of the grid
+* RI and basis set fitting
+* potential calculation at arbitrary points
+* ECP contribution?
+* B05
+* B13
+* Victor's trick
+* Tao and other C6
