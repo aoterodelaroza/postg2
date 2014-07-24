@@ -22,14 +22,11 @@ contains
     type(tmesh), intent(inout) :: mesh !< Mesh, with all the properties set.
     logical, intent(in) :: mask(mprops) !< Properties mask: only calculate true.
 
-    integer :: istat, i, ispin
+    integer :: istat, i, j
     real*8 :: prho(2), drho2(2), d2rho(2), taup(2), pb(2), phi(m%nmo)
     type(props) :: pr
     logical :: lmask(mprops)
-    real*8 :: wphi(mesh%n,m%nmo)
-
-    ! allocate
-    call mesh_allocate(mesh,mask)
+    real*8 :: wphi(mesh%n,m%nmo), quads, dsigs, uxps
 
     ! electrostatic potential -> needs the total density
     lmask = mask
@@ -39,8 +36,18 @@ contains
     lmask = mask
     if (mask(21)) lmask(1) = .true.
 
+    ! inverse BR hole normalization: needs the exdens and all the stuff
+    lmask = mask
+    if (mask(22)) then
+       lmask(1:16) = .true.
+       lmask(21) = .true.
+    end if
+
     ! only calculate unknown properties
     lmask = lmask .and..not.mesh%isthere
+
+    ! allocate
+    call mesh_allocate(mesh,lmask)
 
     ! calculate the properties from the orbitals
     if (any(lmask(1:19))) then
@@ -76,6 +83,10 @@ contains
     ! calculate the exchange energy density
     if (lmask(21)) then
        call calc_exdens(m,mesh)
+    endif
+
+    if (lmask(22)) then
+       call calc_xlns(mesh)
     endif
 
     ! update what has been calculated
@@ -457,5 +468,35 @@ contains
     endif
 
   end subroutine calc_exdens
+
+  !> Calculate the inverse BR hole normalization on the grid
+  subroutine calc_xlns(mesh)
+    use meshmod
+    use types
+    use tools
+    use param
+    implicit none
+
+    type(tmesh), intent(inout) :: mesh 
+
+    integer :: i, j
+    real*8 :: quads, dsigs, uxps
+
+    if (.not.allocated(mesh%exdens)) &
+       call error('calc_xlns','need exdens for xlns',2)
+    
+    if (.not.allocated(mesh%xlns)) allocate(mesh%xlns(mesh%n,2))
+    mesh%xlns = 0d0
+    do j = 1, 2
+       do i = 1, mesh%n
+          dsigs = mesh%tau(i,j) - 0.25d0 * mesh%drho2(i,j) / max(mesh%rho(i,j),1d-30)
+          quads = (mesh%d2rho(i,j)-2d0*dsigs) / 6d0
+          uxps = -2d0*mesh%exdens(i,j)/mesh%rho(i,j)
+          call xlnorm(mesh%rho(i,j),quads,uxps,mesh%xlns(i,j))
+       end do
+    end do
+
+  end subroutine calc_xlns
+
 
 end module wfnmod

@@ -27,12 +27,13 @@ subroutine sandbox_energy(mol,mesh)
   character*(mline) :: line, msg, sint
   integer :: i, j
   real*8 :: ebr1, ux, b, alf, a, x, expx, enuc, eee, een
-  real*8 :: etau, b1, alf1, a1, x1, ux1, v(3), r, exx, e
-  real*8 :: charge, zk
+  real*8 :: etau, b1, alf1, a1, x1, ux1, v(3), r, exx, e, ec
+  real*8 :: charge, zk, etotal
   real*8, allocatable :: vnuc(:), exdens(:,:), phi(:)
   logical :: mask(mprops)
   integer :: narg, iarg
 
+  etotal = 0d0
   narg = command_argument_count()
   iarg = 2
   do while(.true.)
@@ -63,9 +64,11 @@ subroutine sandbox_energy(mol,mesh)
            end do
         end do
         write (iout,'("Nuclear repulsion energy (enn) = ",1p,E22.14)') enuc
+        etotal = etotal + enuc
      elseif (trim(line) == "ekin") then
         etau = 0.5d0 * (sum(mesh%w * mesh%tau(:,1))+sum(mesh%w * mesh%tau(:,2)))
         write (iout,'("Kinetic energy (ekin) = ",1p,E22.14)') etau
+        etotal = etotal + etau
      elseif (trim(line) == "ebr") then
         ebr1 = 0d0
         do j = 1,2 
@@ -87,12 +90,14 @@ subroutine sandbox_energy(mol,mesh)
            end do
         end do
         write (iout,'("Classic BR exchange (ebr) = ",1p,E22.14)') ebr1
+        etotal = etotal + ebr1
      elseif (trim(line) == "eee") then
         mask = .false.
         mask(20) = .true.
         call propts_grid(mol,mesh,mask)
         eee = 0.5d0*sum(mesh%w * mesh%rho(:,0) * mesh%vel)
         write (iout,'("Coulomb energy (eee) = ",1p,E22.14)') eee
+        etotal = etotal + eee
      elseif (trim(line) == "een") then
         allocate(vnuc(mesh%n))
         vnuc = 0d0
@@ -106,11 +111,23 @@ subroutine sandbox_energy(mol,mesh)
         een = sum(mesh%w * mesh%rho(:,0) * vnuc)
         deallocate(vnuc)
         write (iout,'("Coulomb energy (een) = ",1p,E22.14)') een
+        etotal = etotal + een
      elseif (trim(line) == "exx") then
         mask = .false.
         mask(21) = .true.
         call propts_grid(mol,mesh,mask)
-        write (iout,'("Exchange energy (exx) = ",1p,E22.14)') sum(mesh%w * mesh%exdens(:,0))
+        exx = sum(mesh%w * mesh%exdens(:,0))
+        write (iout,'("Exchange energy (exx) = ",1p,E22.14)') exx
+        etotal = etotal + exx
+     elseif (trim(line) == "ecb13_stat_opp") then
+        mask = .false.
+        mask(22) = .true.
+        call propts_grid(mol,mesh,mask)
+        ec = sum(mesh%w * mesh%rho(:,1)*mesh%exdens(:,2)/max(mesh%rho(:,2),1d-300)) +&
+             sum(mesh%w * mesh%rho(:,2)*mesh%exdens(:,1)/max(mesh%rho(:,1),1d-300)) 
+
+        write (iout,'("B13 static correlation energy, opposite spins (ecb13_stat_opp) = ",1p,E22.14)') ec
+        etotal = etotal + ec
      elseif (trim(line) == "libxc") then
 #ifdef HAVE_LIBXC
         iarg = iarg + 1
@@ -158,5 +175,9 @@ subroutine sandbox_energy(mol,mesh)
         call error("sandbox_energy","unknown keyword",2)
      endif
   end do
+  etotal = etotal + e
+  if (etotal /= 0d0) then
+     write (iout,'("Total energy (etotal) = ",1p,E22.14)') etotal
+  endif
 
 end subroutine sandbox_energy

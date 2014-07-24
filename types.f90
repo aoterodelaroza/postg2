@@ -1,4 +1,4 @@
-! -*- mode: F90 -*-
+
 
 !> Module for data types and memory management
 module types
@@ -30,6 +30,7 @@ module types
      real*8, allocatable :: prefac(:,:) !< A BR hole parameter (1-norm)
      real*8, allocatable :: vel(:) !< electrostatic potential
      real*8, allocatable :: exdens(:,:) !< exchange energy density
+     real*8, allocatable :: xlns(:,:) !< inverse BR hole normalization
      logical :: isthere(mprops) = .false. !< true if a property is calculated
   end type tmesh
   !> Molecule
@@ -186,7 +187,12 @@ contains
     ! Exchange potential
     if (mask(21)) then
        if (.not.allocated(mesh%exdens)) allocate(mesh%exdens(mesh%n,0:2),stat=istat)
-       if (istat /= 0) call error('propts_grid','could not allocate memory for vel',2)
+       if (istat /= 0) call error('propts_grid','could not allocate memory for exdens',2)
+    end if
+    ! Inverse BR hole normalization
+    if (mask(22)) then
+       if (.not.allocated(mesh%xlns)) allocate(mesh%xlns(mesh%n,1:2),stat=istat)
+       if (istat /= 0) call error('propts_grid','could not allocate memory for xlns',2)
     end if
 
   end subroutine mesh_allocate

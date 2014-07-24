@@ -1,29 +1,30 @@
 --- List of properties ---
 
-|    Num | Needs grid | Property                              |
-|--------+------------+---------------------------------------|
-|      1 | x          | density (total)                       |
-|      2 | x          | rho (up)                              |
-|      3 | x          | rho (down)                            |
-|      4 | x          | spin density (up-down)                |
-|      5 | x          | square norm gradient density          |
-|      6 | x          | (norm rho)^2 (up)                     |
-|      7 | x          | (norm rho)^2 (down)                   |
-|      8 | x          | (norm rho)^2 (up - down)              |
-|      9 | x          | laplacian                             |
-|     10 | x          | laplacian (up)                        |
-|     11 | x          | laplacian (down)                      |
-|     12 | x          | spin laplacian (up - down)            |
-|     13 | x          | kinetic energy density                |
-|     14 | x          | ked (up)                              |
-|     15 | x          | ked (down)                            |
-|     16 | x          | ked (up - down)                       |
-|     17 | x          | BR hole b, the XDM way (spin average) |
-|     18 | x          | BR hole b, the XDM way (up)           |
-|     19 | x          | BR hole b, the XDM way (down)         |
-|     20 | 1,20       | Electrostatic potential               |
-|     21 | 1,21       | Exchange energy density               |
-|--------+------------+---------------------------------------|
+| Num | Needs grid | Property                              |
+|-----+------------+---------------------------------------|
+|   1 | x          | density (total)                       |
+|   2 | x          | rho (up)                              |
+|   3 | x          | rho (down)                            |
+|   4 | x          | spin density (up-down)                |
+|   5 | x          | square norm gradient density          |
+|   6 | x          | (norm rho)^2 (up)                     |
+|   7 | x          | (norm rho)^2 (down)                   |
+|   8 | x          | (norm rho)^2 (up - down)              |
+|   9 | x          | laplacian                             |
+|  10 | x          | laplacian (up)                        |
+|  11 | x          | laplacian (down)                      |
+|  12 | x          | spin laplacian (up - down)            |
+|  13 | x          | kinetic energy density                |
+|  14 | x          | ked (up)                              |
+|  15 | x          | ked (down)                            |
+|  16 | x          | ked (up - down)                       |
+|  17 | x          | BR hole b, the XDM way (spin average) |
+|  18 | x          | BR hole b, the XDM way (up)           |
+|  19 | x          | BR hole b, the XDM way (down)         |
+|  20 | 1,20       | Electrostatic potential               |
+|  21 | 1,21       | Exchange energy density               |
+|  22 | 1,21,22    | inverse BR hole normalization         |
+|-----+------------+---------------------------------------|
 
 
 --- libxc 2.0.1, list of functionals ---
