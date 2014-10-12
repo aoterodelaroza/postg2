@@ -24,6 +24,7 @@ contains
 
     real*8 :: rhs, x0, shift, x1, x, expo, f, df
     integer :: i
+    real*8, parameter :: tiny = 1d-20
 
     rhs=third2*(pi*rho/hnorm)**third2*rho/quad
     x0=2.d0

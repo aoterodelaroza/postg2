@@ -1,5 +1,3 @@
-
-
 !> Module for data types and memory management
 module types
   use param, only:mline
@@ -11,7 +9,7 @@ module types
   public :: mask_none ! return an all-false properties mask
   public :: mesh_allocate ! allocate the mesh arrays using a mask
 
-  integer, parameter :: mprops = 21
+  integer, parameter :: mprops = 22
   !> Molecular mesh
   type tmesh
      integer :: n

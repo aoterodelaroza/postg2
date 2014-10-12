@@ -2,3 +2,5 @@
 *.mod 
 *.o
 postg2
+postg2_dbg
+

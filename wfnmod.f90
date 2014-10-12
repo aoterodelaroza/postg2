@@ -482,6 +482,8 @@ contains
     integer :: i, j
     real*8 :: quads, dsigs, uxps
 
+    real*8, parameter :: tiny = 1d-20
+
     if (.not.allocated(mesh%exdens)) &
        call error('calc_xlns','need exdens for xlns',2)
     
@@ -491,12 +493,11 @@ contains
        do i = 1, mesh%n
           dsigs = mesh%tau(i,j) - 0.25d0 * mesh%drho2(i,j) / max(mesh%rho(i,j),1d-30)
           quads = (mesh%d2rho(i,j)-2d0*dsigs) / 6d0
-          uxps = -2d0*mesh%exdens(i,j)/mesh%rho(i,j)
+          uxps = -2d0*mesh%exdens(i,j)/max(mesh%rho(i,j),tiny)
           call xlnorm(mesh%rho(i,j),quads,uxps,mesh%xlns(i,j))
        end do
     end do
 
   end subroutine calc_xlns
-
 
 end module wfnmod

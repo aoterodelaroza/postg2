@@ -297,7 +297,6 @@ contains
           call error('poiss_grid','unknown itype',2)
        end if
     end if
-    mesh%vel = 0d0
     vel = 0d0
 
     ! fill rads

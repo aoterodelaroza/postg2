@@ -25,13 +25,16 @@ subroutine sandbox_energy(mol,mesh)
 #endif
 
   character*(mline) :: line, msg, sint
-  integer :: i, j
+  integer :: i, j, k
   real*8 :: ebr1, ux, b, alf, a, x, expx, enuc, eee, een
   real*8 :: etau, b1, alf1, a1, x1, ux1, v(3), r, exx, e, ec
-  real*8 :: charge, zk, etotal
-  real*8, allocatable :: vnuc(:), exdens(:,:), phi(:)
+  real*8 :: charge, zk, etotal, flip, r1, r2, zz, uu, fss, dsigs
+  real*8 :: uxps1, uxps2, quads, m2, dn, m1
+  real*8, allocatable :: vnuc(:), phi(:)
   logical :: mask(mprops)
   integer :: narg, iarg
+
+  real*8, parameter :: tiny = 1d-20
 
   etotal = 0d0
   narg = command_argument_count()
@@ -119,15 +122,114 @@ subroutine sandbox_energy(mol,mesh)
         exx = sum(mesh%w * mesh%exdens(:,0))
         write (iout,'("Exchange energy (exx) = ",1p,E22.14)') exx
         etotal = etotal + exx
-     elseif (trim(line) == "ecb13_stat_opp") then
+     elseif (trim(line) == "ecb13_dyn_opp") then
         mask = .false.
+        mask(1:16) = .true.
+        mask(21) = .true.
         mask(22) = .true.
         call propts_grid(mol,mesh,mask)
-        ec = sum(mesh%w * mesh%rho(:,1)*mesh%exdens(:,2)/max(mesh%rho(:,2),1d-300)) +&
-             sum(mesh%w * mesh%rho(:,2)*mesh%exdens(:,1)/max(mesh%rho(:,1),1d-300)) 
+        ec = 0d0
 
-        write (iout,'("B13 static correlation energy, opposite spins (ecb13_stat_opp) = ",1p,E22.14)') ec
+        do k = 1, mesh%n
+           flip = min((1d0-mesh%xlns(k,1))/max(mesh%xlns(k,2),tiny),(1d0-mesh%xlns(k,2))/max(mesh%xlns(k,1),tiny))
+           flip = min(flip,1d0)
+           uxps1 = -2d0*mesh%exdens(k,1)/max(mesh%rho(k,1),tiny)
+           uxps2 = -2d0*mesh%exdens(k,2)/max(mesh%rho(k,2),tiny)
+           r1 = mesh%xlns(k,1) / max(abs(uxps1),tiny)
+           r2 = mesh%xlns(k,2) / max(abs(uxps1),tiny)
+           zz = 0.63d0 * (r1 + r2)
+           uu = -0.8d0 * mesh%rho(k,1) * mesh%rho(k,2) * zz**3 / (1d0+zz)
+           ec = ec + mesh%w(k) * uu * (1d0-flip)
+        end do
+
+        write (iout,'("B13 dynamical correlation energy, opp (ecb13_dyn_opp) = ",1p,E22.14)') ec
         etotal = etotal + ec
+
+     elseif (trim(line) == "ecb13_dyn_par") then
+        mask = .false.
+        mask(1:16) = .true.
+        mask(21) = .true.
+        mask(22) = .true.
+        call propts_grid(mol,mesh,mask)
+
+        ec = 0d0
+        do i = 1, 2
+           do k = 1, mesh%n
+              flip = min((1d0-mesh%xlns(k,1))/max(mesh%xlns(k,2),tiny),(1d0-mesh%xlns(k,2))/max(mesh%xlns(k,1),tiny))
+              flip = min(flip,1d0)
+              uxps1 = -2d0*mesh%exdens(k,i)/max(mesh%rho(k,i),tiny)
+              r1 = mesh%xlns(k,i) / max(abs(uxps1),tiny)
+
+              ! calculate the moments
+              dsigs = mesh%tau(k,i) - 0.25d0 * mesh%drho2(k,i) / max(mesh%rho(k,i),tiny)
+              ! quads = (mesh%d2rho(k,i)-2d0*dsigs) / 6d0
+              ! call bhole(mesh%rho(k,i),quads,mesh%xlns(k,i),b,alf,a)
+              ! x = alf * b
+              m2 =  0.25d0 * mesh%xlns(k,i) / pi
+
+              dn = 1 - mesh%xlns(k,i) - flip * mesh%xlns(k,mod(i,2)+1)
+              fss = min(3d0*mesh%rho(k,i)*dn/(dsigs*m2),1d0)
+              zz = 2d0 * 0.88d0 * r1
+              ec = ec + mesh%w(k) * (1d0-fss) * mesh%rho(k,i) * dsigs * zz**5  / (1d0+0.5d0*zz)
+           end do
+        end do
+        ec = -0.005d0 * ec
+        write (iout,'("B13 dynamical correlation energy, parallel (ecb13_dyn_par) = ",1p,E22.14)') ec
+        etotal = etotal + ec
+
+     elseif (trim(line) == "ecb13_stat_opp") then
+        mask = .false.
+        mask(1:16) = .true.
+        mask(21) = .true.
+        mask(22) = .true.
+        call propts_grid(mol,mesh,mask)
+
+        ec = 0d0
+        do k = 1, mesh%n
+           if (mesh%rho(k,1)<tiny .and. mesh%rho(k,2) < tiny) cycle
+           flip = min((1d0-mesh%xlns(k,1))/max(mesh%xlns(k,2),tiny),(1d0-mesh%xlns(k,2))/max(mesh%xlns(k,1),tiny))
+           flip = min(flip,1d0)
+           uxps1 = -2d0*mesh%exdens(k,1)/max(mesh%rho(k,1),tiny)
+           uxps2 = -2d0*mesh%exdens(k,2)/max(mesh%rho(k,2),tiny)
+           ec = ec - 0.5d0 * mesh%w(k) * flip * (mesh%rho(k,1)*uxps2 + mesh%rho(k,2)*uxps1)
+        end do
+        write (iout,'("B13 static correlation energy, opp (ecb13_stat_opp) = ",1p,E22.14)') ec
+        etotal = etotal + ec
+
+     elseif (trim(line) == "ecb13_stat_par") then
+        mask = .false.
+        mask(1:16) = .true.
+        mask(21) = .true.
+        mask(22) = .true.
+        call propts_grid(mol,mesh,mask)
+
+        ec = 0d0
+        do i = 1, 2
+           do k = 1, mesh%n
+              if (abs(mesh%rho(k,i)) < tiny) cycle
+              flip = min((1d0-mesh%xlns(k,1))/max(mesh%xlns(k,2),tiny),(1d0-mesh%xlns(k,2))/max(mesh%xlns(k,1),tiny))
+              flip = min(flip,1d0)
+              uxps1 = -2d0*mesh%exdens(k,i)/max(mesh%rho(k,i),tiny)
+              r1 = mesh%xlns(k,i) / max(abs(uxps1),tiny)
+
+              ! calculate the moments
+              dsigs = mesh%tau(k,i) - 0.25d0 * mesh%drho2(k,i) / max(mesh%rho(k,i),tiny)
+              quads = (mesh%d2rho(k,i)-2d0*dsigs) / 6d0
+              call bhole(mesh%rho(k,i),quads,mesh%xlns(k,i),b,alf,a)
+              x = alf * b
+              m1 = mesh%xlns(k,i) * (0.25d0-exp(-x)*(0.125d0*x+0.25d0)) / b / pi
+              m2 = 0.25d0 * mesh%xlns(k,i) / pi
+
+              dn = 1 - mesh%xlns(k,i) - flip * mesh%xlns(k,mod(i,2)+1)
+              fss = min(3d0*mesh%rho(k,i)*dn/(dsigs*m2),1d0)
+              uu = -fss * dsigs / 3d0 / max(mesh%rho(k,i),tiny) * m1
+              ec = ec + mesh%w(k) * mesh%rho(k,i) * uu
+           end do
+        end do
+        ec = 0.5d0 * ec
+        write (iout,'("B13 static correlation energy, parallel (ecb13_stat_par) = ",1p,E22.14)') ec
+        etotal = etotal + ec
+
      elseif (trim(line) == "libxc") then
 #ifdef HAVE_LIBXC
         iarg = iarg + 1
@@ -150,7 +252,7 @@ subroutine sandbox_energy(mol,mesh)
 
         e = 0d0
         do i = 1, mesh%n
-           if (mesh%rho(i,0) < 1d-30) cycle
+           if (mesh%rho(i,0) < tiny) cycle
            select case(ifun%family)
            case (XC_FAMILY_LDA)
               call xc_f90_lda_exc(ifun%conf, 1, mesh%rho(i,0), zk)
@@ -171,11 +273,11 @@ subroutine sandbox_energy(mol,mesh)
 #else
         call error("sandbox_energy","postg2 not compiled with libxc",2)
 #endif
+        etotal = etotal + e
      else
         call error("sandbox_energy","unknown keyword",2)
      endif
   end do
-  etotal = etotal + e
   if (etotal /= 0d0) then
      write (iout,'("Total energy (etotal) = ",1p,E22.14)') etotal
   endif
