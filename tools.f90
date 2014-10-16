@@ -22,11 +22,13 @@ contains
     real*8, intent(out) :: alf !< Hole a
     real*8, intent(out) :: prefac !< Hole A
 
-    real*8 :: rhs, x0, shift, x1, x, expo, f, df
+    real*8 :: rhs, x0, shift, x1, x, expo, f, df, quad0
     integer :: i
     real*8, parameter :: tiny = 1d-20
 
-    rhs=third2*(pi*rho/hnorm)**third2*rho/quad
+    quad0 = quad
+    if (abs(quad) < tiny) quad0 = sign(tiny,quad)
+    rhs=third2*(pi*rho/max(hnorm,tiny))**third2*rho/quad0
     x0=2.d0
     shift=1.d0
     if(rhs.lt.0.d0)go to 10
@@ -59,7 +61,7 @@ contains
 111 x=x1
     expo=dexp(-x)
     prefac=rho/expo
-    alf=(8.d0*pi*prefac/hnorm)**third
+    alf=(8.d0*pi*prefac/max(hnorm,tiny))**third
     b=x/alf
     return
 1001 format(' ','bhole: newton algorithm fails to converge!')

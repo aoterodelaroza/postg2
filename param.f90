@@ -173,14 +173,14 @@ contains
     integer, intent(in) :: z !< Atomic number
     integer :: z2nr !< Number of radial points
 
-    ! z2nr = 40
-    ! if (z > 2) z2nr = 60
-    ! if (z > 10) z2nr = 80
-    ! if (z > 18) z2nr = 100
-    ! if (z > 36) z2nr = 120
-    ! if (z > 54) z2nr = 140
-    ! if (z > 86) z2nr = 160
-    z2nr = 200
+    z2nr = 40
+    if (z > 2) z2nr = 60
+    if (z > 10) z2nr = 80
+    if (z > 18) z2nr = 100
+    if (z > 36) z2nr = 120
+    if (z > 54) z2nr = 140
+    if (z > 86) z2nr = 160
+    ! z2nr = 200
     ! z2nr = 400
     ! z2nr = 2000
     ! z2nr = 2000
@@ -504,6 +504,7 @@ contains
     logical           :: matched
 
     isreal = .false.
+    if(len_trim(line(lp:)) == 0) return
     do while (line(lp:lp).eq.blank)
        lp = lp + 1
        if (lp > mline) return
