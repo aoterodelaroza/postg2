@@ -39,26 +39,6 @@ subroutine sandbox_energy(mol,mesh)
   real*8, parameter :: tiny = 1d-20
   real*8, parameter :: small = 1d-10
 
-  ! ! xxxx
-  ! mask = .false.
-  ! mask(1:22) = .true.
-  ! call propts_grid(mol,mesh,mask)
-  ! open(unit=35,name="bleh.dat")
-  ! allocate(mesh%dsigs(1:mesh%n,0:2))
-  ! allocate(mesh%quads(1:mesh%n,0:2))
-  ! do i = 1, mesh%n
-  !    read (35,'(999(E20.14,X))') mesh%w(i), mesh%rho(i,1), mesh%rho(i,2),&
-  !       mesh%tau(i,1), mesh%tau(i,2), mesh%dsigs(i,1), mesh%dsigs(i,2),&
-  !       mesh%quads(i,1), mesh%quads(i,2), mesh%exdens(i,1), mesh%exdens(i,2),&
-  !       mesh%xlns(i,1), mesh%xlns(i,2)
-  !    mesh%rho(i,0) = mesh%rho(i,1) + mesh%rho(i,2)
-  !    mesh%tau(i,0) = mesh%tau(i,1) + mesh%tau(i,2)
-  !    mesh%dsigs(i,0) = mesh%dsigs(i,1) + mesh%dsigs(i,2)
-  !    mesh%quads(i,0) = mesh%quads(i,1) + mesh%quads(i,2)
-  !    mesh%exdens(i,0) = mesh%exdens(i,1) + mesh%exdens(i,2)
-  ! end do
-  ! close(35)
-
   ! build the argument array
   carg = "  "
   narg = 0
@@ -251,16 +231,16 @@ subroutine sandbox_energy(mol,mesh)
               r1 = mesh%xlns(k,i) / max(abs(uxps1),tiny)
 
               ! calculate the moments
-              dsigs = mesh%tau(k,i) - 0.25d0 * mesh%drho2(k,i) / max(mesh%rho(k,i),tiny)
+              dsigs = max(mesh%tau(k,i) - 0.25d0 * mesh%drho2(k,i) / max(mesh%rho(k,i),tiny),small)
               m2 =  0.25d0 * mesh%xlns(k,i) / pi
 
               dn = 1 - mesh%xlns(k,i) - flip * mesh%xlns(k,mod(i,2)+1)
               fss = min(3d0*mesh%rho(k,i)*dn/max(dsigs*m2,tiny),1d0)
               zz = 2d0 * 0.88d0 * r1
-              e = e + mesh%w(k) * (1d0-fss) * mesh%rho(k,i) * dsigs * zz**5  / (1d0+0.5d0*zz)
+              uu = -0.005d0 * mesh%rho(k,i) * dsigs * zz**5  / (1d0+0.5d0*zz)
+              e = e + mesh%w(k) * (1-fss) * uu
            end do
         end do
-        e = -0.005d0 * e
         lp = 1
         ok = isreal(rdum,carg(iarg+1),lp)
         if (.not.ok) then
@@ -316,7 +296,7 @@ subroutine sandbox_energy(mol,mesh)
               r1 = mesh%xlns(k,i) / max(abs(uxps1),tiny)
 
               ! calculate the moments
-              dsigs = mesh%tau(k,i) - 0.25d0 * mesh%drho2(k,i) / max(mesh%rho(k,i),tiny)
+              dsigs = max(mesh%tau(k,i) - 0.25d0 * mesh%drho2(k,i) / max(mesh%rho(k,i),tiny),small)
               quads = (mesh%d2rho(k,i)-2d0*dsigs) / 6d0
               call bhole(mesh%rho(k,i),quads,mesh%xlns(k,i),b,alf,a)
               x = alf * b
@@ -324,9 +304,8 @@ subroutine sandbox_energy(mol,mesh)
               m2 = 0.25d0 * mesh%xlns(k,i) / pi
 
               dn = 1 - mesh%xlns(k,i) - flip * mesh%xlns(k,mod(i,2)+1)
-              fss = min(3d0*mesh%rho(k,i)*dn/max(dsigs*m2,tiny),1d0)
-              uu = -fss * dsigs / 3d0 / max(mesh%rho(k,i),tiny) * m1
-              e = e + mesh%w(k) * mesh%rho(k,i) * uu
+              fss = min(3d0*mesh%rho(k,i)*dn/(dsigs*m2),1d0)
+              e = e - mesh%w(k) * fss * dsigs * m1 / 6d0
            end do
         end do
         e = 0.5d0 * e
@@ -365,7 +344,7 @@ subroutine sandbox_energy(mol,mesh)
            ucdii = 0d0
            zij = 0d0
            do i = 1, 2
-              dsigs = mesh%tau(k,i) - 0.25d0 * mesh%drho2(k,i) / max(mesh%rho(k,i),tiny)
+              dsigs = max(mesh%tau(k,i) - 0.25d0 * mesh%drho2(k,i) / max(mesh%rho(k,i),tiny),small)
               quads = (mesh%d2rho(k,i)-2d0*dsigs) / 6d0
               uxps1 = -2d0*mesh%exdens(k,i)/max(mesh%rho(k,i),tiny)
               r1 = mesh%xlns(k,i) / max(abs(uxps1),tiny)

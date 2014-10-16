@@ -192,8 +192,8 @@ contains
     integer, intent(in) :: z !< Atomic number
     integer :: z2nang !< Number of angular points
 
-    ! z2nang = 194
-    z2nang = 302
+    z2nang = 194
+    ! z2nang = 302
     ! z2nang = 770
     ! z2nang = 5810
 

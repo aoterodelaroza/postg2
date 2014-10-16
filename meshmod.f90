@@ -64,73 +64,7 @@ contains
        nang = z2nang(m%z(i))
        allocate(xang(nang),yang(nang),zang(nang),wang(nang),stat=istat)
        if (istat /= 0) call error('readwfn','could not allocate memory for angular meshes',2)
-       if (nang == 6) then
-          call ld0006(xang,yang,zang,wang,nang)
-       elseif (nang == 14) then
-          call ld0014(xang,yang,zang,wang,nang)
-       elseif (nang == 26) then
-          call ld0026(xang,yang,zang,wang,nang)
-       elseif (nang == 38) then
-          call ld0038(xang,yang,zang,wang,nang)
-       elseif (nang == 50) then
-          call ld0050(xang,yang,zang,wang,nang)
-       elseif (nang == 74) then
-          call ld0074(xang,yang,zang,wang,nang)
-       elseif (nang == 86) then
-          call ld0086(xang,yang,zang,wang,nang)
-       elseif (nang == 110) then
-          call ld0110(xang,yang,zang,wang,nang)
-       elseif (nang == 146) then
-          call ld0146(xang,yang,zang,wang,nang)
-       elseif (nang == 170) then
-          call ld0170(xang,yang,zang,wang,nang)
-       elseif (nang == 194) then
-          call ld0194(xang,yang,zang,wang,nang)
-       elseif (nang == 230) then
-          call ld0230(xang,yang,zang,wang,nang)
-       elseif (nang == 266) then
-          call ld0266(xang,yang,zang,wang,nang)
-       elseif (nang == 302) then
-          call ld0302(xang,yang,zang,wang,nang)
-       elseif (nang == 350) then
-          call ld0350(xang,yang,zang,wang,nang)
-       elseif (nang == 434) then
-          call ld0434(xang,yang,zang,wang,nang)
-       elseif (nang == 590) then
-          call ld0590(xang,yang,zang,wang,nang)
-       elseif (nang == 770) then
-          call ld0770(xang,yang,zang,wang,nang)
-       elseif (nang == 974) then
-          call ld0974(xang,yang,zang,wang,nang)
-       elseif (nang == 1202) then
-          call ld1202(xang,yang,zang,wang,nang)
-       elseif (nang == 1454) then
-          call ld1454(xang,yang,zang,wang,nang)
-       elseif (nang == 1730) then
-          call ld1730(xang,yang,zang,wang,nang)
-       elseif (nang == 2030) then
-          call ld2030(xang,yang,zang,wang,nang)
-       elseif (nang == 2354) then
-          call ld2354(xang,yang,zang,wang,nang)
-       elseif (nang == 2702) then
-          call ld2702(xang,yang,zang,wang,nang)
-       elseif (nang == 3074) then
-          call ld3074(xang,yang,zang,wang,nang)
-       elseif (nang == 3470) then
-          call ld3470(xang,yang,zang,wang,nang)
-       elseif (nang == 3890) then
-          call ld3890(xang,yang,zang,wang,nang)
-       elseif (nang == 4334) then
-          call ld4334(xang,yang,zang,wang,nang)
-       elseif (nang == 4802) then
-          call ld4802(xang,yang,zang,wang,nang)
-       elseif (nang == 5294) then
-          call ld5294(xang,yang,zang,wang,nang)
-       elseif (nang == 5810) then
-          call ld5810(xang,yang,zang,wang,nang)
-       else
-          call error("genmesh","unknown value of nang",2)
-       end if
+       call wrap_lebedev(nang,xang,yang,zang,wang)
 
        ! 3d mesh, parallelize over radial shells
        do ir = 1, nr
@@ -272,20 +206,19 @@ contains
     integer, intent(in) :: itype
     real*8, optional :: rho0(:), vel0(:)
 
-    integer, parameter :: maxrad = 200
-
     real*8, allocatable :: rho(:), vel(:)
-    integer :: inuc, jnuc, i, j, kk, k, il, ir
-    integer :: nr, nang, nwav, l, l2, iy, jy, nangj, nrj
-    real*8 :: h, rholm(maxrad), xx(maxrad), sum
-    real*8 :: wang(302), rmid, v(3), rmax
-    real*8 :: ylm(302,0:14,0:14)
-    real*8 :: charge, bnd(10,-2:maxrad+3), r, q, dq, y, rfac
+    integer :: inuc, jnuc, i, j, kk, k, il, ir, maxrad
+    integer :: nr, nang, nwav, l, l2, iy, jy, nangj, nrj, mang
+    real*8 :: h, sum
+    real*8 :: rmid, v(3), rmax
+    real*8 :: charge, r, q, dq, y, rfac
     real*8, allocatable :: rads(:,:), rq(:), rqq(:), wrads(:), d2r(:,:), trid2r(:,:)
     real*8, allocatable :: x(:,:,:)
-    real*8 :: rs(302), xunit(3,302), dqs(302)
-    integer :: ipvt(maxrad), ierr, i1, intqs(302), intq
-    real*8, dimension(0:maxrad,0:14,0:14) :: ulm, a, b, c
+    integer :: ierr, i1, intq
+    real*8, allocatable :: wang(:), ylm(:,:,:), rs(:), xunit(:,:), dqs(:)
+    real*8, allocatable :: rholm(:), xx(:), bnd(:,:)
+    real*8, allocatable ::  ulm(:,:,:), a(:,:,:), b(:,:,:), c(:,:,:)
+    integer, allocatable :: intqs(:), ipvt(:)
 
     allocate(rho(mesh%n),vel(mesh%n))
     if (present(rho0)) then
@@ -299,15 +232,28 @@ contains
     end if
     vel = 0d0
 
+    ! allocate
+    mang = 0
+    maxrad = 0
+    do i = 1, mol%n
+       mang = max(mang,z2nang(mol%z(i)))
+       maxrad = max(maxrad,z2nr(mol%z(i)))
+    end do
+    allocate(wang(mang),ylm(mang,0:14,0:14),rs(mang),xunit(3,mang),dqs(mang))
+    allocate(rholm(maxrad),xx(maxrad),bnd(10,-2:maxrad+3))
+    allocate(ulm(0:maxrad,0:14,0:14),a(0:maxrad,0:14,0:14),&
+       b(0:maxrad,0:14,0:14),c(0:maxrad,0:14,0:14))
+    allocate(intqs(mang),ipvt(maxrad))
+
     ! fill rads
-    allocate(rads(maxrad,mol%n),x(3,302,mol%n))
+    allocate(rads(maxrad,mol%n),x(3,mang,mol%n))
     allocate(wrads(maxrad),rq(maxrad),rqq(maxrad),d2r(maxrad,7),trid2r(maxrad,3))
     do inuc = 1, mol%n
        nr = z2nr(mol%z(inuc))
        nang = z2nang(mol%z(inuc))
        rmid = 1d0/real(mol%z(inuc),8)**third
        call rmesh(nr,rmid,rads(:,inuc),rq,rqq,wrads,d2r,trid2r)
-       call ld0302(x(1,:,inuc),x(2,:,inuc),x(3,:,inuc),wang,nang)
+       call wrap_lebedev(nang,x(1,:,inuc),x(2,:,inuc),x(3,:,inuc),wang)
     end do
 
     do inuc = 1, mol%n
@@ -328,7 +274,7 @@ contains
           end do
        end do
 
-       call ld0302(x(1,:,inuc),x(2,:,inuc),x(3,:,inuc),wang,nang)
+       call wrap_lebedev(nang,x(1,:,inuc),x(2,:,inuc),x(3,:,inuc),wang)
        call ycalc(x(:,:,inuc),nang,nwav,ylm(1:nang,0:nwav,0:nwav))
 
        do i = 0, nwav
@@ -369,7 +315,6 @@ contains
              call dgbfa(bnd(1,1),10,nr,3,3,ipvt,ierr)
              if(ierr.ne.0) call error('poiss_grid','error in dgbfa',2)
              call dgbsl(bnd(1,1),10,nr,3,3,ipvt,xx,0)
-
              ulm(0,i,j) = 0.d0
              do ir = 1, nr
                 ulm(ir,i,j)=xx(ir)
@@ -435,6 +380,7 @@ contains
        end do
     end do
 
+    deallocate(wang,ylm,rs,xunit,dqs,rholm,xx,bnd,ulm,a,b,c,intqs,ipvt)
     deallocate(wrads,rq,rqq,d2r,trid2r)
     deallocate(rho,rads,x)
     if (present(vel0)) then

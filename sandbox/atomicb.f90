@@ -44,7 +44,7 @@ subroutine sandbox_atomicb(mol)
 
   ! angular mesh
   nang = 302
-  call ld0302(xang,yang,zang,wang,nang)
+  call wrap_lebedev(nang,xang,yang,zang,wang)
   
   mask = .false.
   mask(1:19) = .true.

@@ -9,12 +9,13 @@ module tools_math
   public :: ycalc ! calculate spherical harmonics
   public :: spline ! fit a spline
   public :: spline2 ! fit a spline, with selection of boundary conditions
+  public :: wrap_lebedev ! fit a spline, with selection of boundary conditions
   private :: gen_oh ! lebedev node generator
-  public :: LD0006, LD0014, LD0026, LD0038, LD0050, LD0074, LD0086,&
-            LD0110, LD0146, LD0170, LD0194, LD0230, LD0266, LD0302,&
-            LD0350, LD0434, LD0590, LD0770, LD0974, LD1202, LD1454,&
-            LD1730, LD2030, LD2354, LD2702, LD3074, LD3470, LD3890,&
-            LD4334, LD4802, LD5294, LD5810 ! lebedev routines
+  private :: LD0006, LD0014, LD0026, LD0038, LD0050, LD0074, LD0086,&
+             LD0110, LD0146, LD0170, LD0194, LD0230, LD0266, LD0302,&
+             LD0350, LD0434, LD0590, LD0770, LD0974, LD1202, LD1454,&
+             LD1730, LD2030, LD2354, LD2702, LD3074, LD3470, LD3890,&
+             LD4334, LD4802, LD5294, LD5810 ! lebedev routines
 
   real*8 :: fac(0:40) ! factorial
   real*8 :: dfac(0:20) ! double factorial
@@ -284,6 +285,84 @@ contains
 !
       RETURN
   END subroutine spline2
+
+  subroutine wrap_lebedev(nang,xang,yang,zang,wang)
+    use param
+    integer, intent(in) :: nang
+    real*8, intent(out) :: xang(nang)
+    real*8, intent(out) :: yang(nang)
+    real*8, intent(out) :: zang(nang)
+    real*8, intent(out) :: wang(nang)
+
+    if (nang == 6) then
+       call ld0006(xang,yang,zang,wang,nang)
+    elseif (nang == 14) then
+       call ld0014(xang,yang,zang,wang,nang)
+    elseif (nang == 26) then
+       call ld0026(xang,yang,zang,wang,nang)
+    elseif (nang == 38) then
+       call ld0038(xang,yang,zang,wang,nang)
+    elseif (nang == 50) then
+       call ld0050(xang,yang,zang,wang,nang)
+    elseif (nang == 74) then
+       call ld0074(xang,yang,zang,wang,nang)
+    elseif (nang == 86) then
+       call ld0086(xang,yang,zang,wang,nang)
+    elseif (nang == 110) then
+       call ld0110(xang,yang,zang,wang,nang)
+    elseif (nang == 146) then
+       call ld0146(xang,yang,zang,wang,nang)
+    elseif (nang == 170) then
+       call ld0170(xang,yang,zang,wang,nang)
+    elseif (nang == 194) then
+       call ld0194(xang,yang,zang,wang,nang)
+    elseif (nang == 230) then
+       call ld0230(xang,yang,zang,wang,nang)
+    elseif (nang == 266) then
+       call ld0266(xang,yang,zang,wang,nang)
+    elseif (nang == 302) then
+       call ld0302(xang,yang,zang,wang,nang)
+    elseif (nang == 350) then
+       call ld0350(xang,yang,zang,wang,nang)
+    elseif (nang == 434) then
+       call ld0434(xang,yang,zang,wang,nang)
+    elseif (nang == 590) then
+       call ld0590(xang,yang,zang,wang,nang)
+    elseif (nang == 770) then
+       call ld0770(xang,yang,zang,wang,nang)
+    elseif (nang == 974) then
+       call ld0974(xang,yang,zang,wang,nang)
+    elseif (nang == 1202) then
+       call ld1202(xang,yang,zang,wang,nang)
+    elseif (nang == 1454) then
+       call ld1454(xang,yang,zang,wang,nang)
+    elseif (nang == 1730) then
+       call ld1730(xang,yang,zang,wang,nang)
+    elseif (nang == 2030) then
+       call ld2030(xang,yang,zang,wang,nang)
+    elseif (nang == 2354) then
+       call ld2354(xang,yang,zang,wang,nang)
+    elseif (nang == 2702) then
+       call ld2702(xang,yang,zang,wang,nang)
+    elseif (nang == 3074) then
+       call ld3074(xang,yang,zang,wang,nang)
+    elseif (nang == 3470) then
+       call ld3470(xang,yang,zang,wang,nang)
+    elseif (nang == 3890) then
+       call ld3890(xang,yang,zang,wang,nang)
+    elseif (nang == 4334) then
+       call ld4334(xang,yang,zang,wang,nang)
+    elseif (nang == 4802) then
+       call ld4802(xang,yang,zang,wang,nang)
+    elseif (nang == 5294) then
+       call ld5294(xang,yang,zang,wang,nang)
+    elseif (nang == 5810) then
+       call ld5810(xang,yang,zang,wang,nang)
+    else
+       call error("wrap_lebedev","unknown value of nang",2)
+    end if
+
+  end subroutine wrap_lebedev
 
   subroutine gen_oh(code, num, x, y, z, w, a, b, v)
        implicit logical(a-z)
