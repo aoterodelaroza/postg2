@@ -133,6 +133,8 @@ subroutine sandbox_xdm(mol,mesh)
      if (mol%z(i) < 1) cycle
      atpol(i) = v(i) * frepol(mol%z(i)) / frevol(mol%z(i))
   enddo
+  write (iout,'("molecular polarizability ",F12.6)') sum(atpol(1:mol%n))
+  write (iout,'("#")')
 
   ! calculate coefficients
   write (iout,'("coefficients and distances (a.u.)")')
