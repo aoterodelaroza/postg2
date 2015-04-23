@@ -6,6 +6,7 @@ module tools_math
   public
 
   public :: math_init ! initialize math constants
+  public :: eigns ! eigenvalues and eigenvectors of a nxn matrix
   public :: ycalc ! calculate spherical harmonics
   public :: spline ! fit a spline
   public :: spline2 ! fit a spline, with selection of boundary conditions
@@ -38,6 +39,34 @@ contains
     end do
 
   end subroutine math_init
+
+  !> Find the eigenvectors and eigenvalues of a real nxn matrix.
+  !> The eigenvectors are stored column-wise in mat.
+  subroutine eig(mat,eval,evali)
+    
+    real*8, intent(inout) :: mat(:,:) !< Input matrix and output eigenvectors (column-wise)
+    real*8, intent(out), optional :: eval(:) !< Real part of the eigenvalues
+    real*8, intent(out), optional :: evali(:) !< Imaginary part of the eigenvalues
+
+    integer :: ifail
+    real*8, dimension(size(mat,1)) :: loceval, localevali, work1, work2, work3
+    real*8, dimension(size(mat,1),size(mat,1)) :: mati, matt, matt2
+
+    mati = 0d0
+
+    if (present(eval)) then
+       call cg(size(mat,1),size(mat,1),mat,mati,eval,evali,1,matt,matt2,work1,work2,work3,ifail)
+    else
+       call cg(size(mat,1),size(mat,1),mat,mati,loceval,localevali,1,matt,matt2,work1,work2,work3,ifail)
+    end if
+    mat = matt
+
+    if (ifail /= 0) then
+       write (*,*) "Error in diagonalization"
+       stop 1
+    end if
+
+  end subroutine eig
 
   !> From numol: generates real spherical harmonics up to order ny
   !> for a set of points x(i), y(i), z(i) on the unit sphere.

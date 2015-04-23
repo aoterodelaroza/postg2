@@ -42,6 +42,7 @@ module types
      integer, allocatable :: icenter(:) !< labels for primitive centers
      integer, allocatable :: itype(:) !< labels for primitive types
      real*8, allocatable :: e(:) !< exponents
+     real*8, allocatable :: eps(:) !< molecular orbital energies
      real*8, allocatable :: occ(:) !< occupation numbers (orbital)
      real*8, allocatable :: c(:,:) !< orbital coefficients
      integer :: mult !< multiplicity

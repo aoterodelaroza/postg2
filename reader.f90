@@ -187,7 +187,7 @@ contains
     integer :: i, j, istat, ncore, kk, lp, idum
     real*8 :: zreal
     character*(mline) :: line, tag
-    logical :: keyw(7)
+    logical :: keyw(8)
 
     integer, parameter :: luwfn = 10
 
@@ -248,6 +248,8 @@ contains
     if (istat /= 0) call error('readwfx','could not allocate memory for occupations',2)
     allocate(m%c(m%nmo,m%npri),stat=istat)
     if (istat /= 0) call error('readwfx','could not allocate memory for orbital coefficients',2)
+    allocate(m%eps(m%nmo),stat=istat)
+    if (istat /= 0) call error('readwfx','could not allocate memory for orbital energies',2)
 
     ! second pass
     rewind(luwfn)
@@ -277,6 +279,9 @@ contains
              m%occ = read_reals1(luwfn,m%nmo)
              m%nelec = sum(m%occ)
              keyw(6) = .true.
+          elseif (trim(line) == "<Molecular Orbital Energies>") then
+             m%eps = read_reals1(luwfn,m%nmo)
+             keyw(7) = .true.
           elseif (trim(line) == "<Molecular Orbital Primitive Coefficients>") then
              read(luwfn,*)
              do i = 1, m%nmo
@@ -284,7 +289,7 @@ contains
                 read(luwfn,*)
                 m%c(i,:) = read_reals1(luwfn,m%npri)
              enddo
-             keyw(7) = .true.
+             keyw(8) = .true.
           endif
        endif
     enddo

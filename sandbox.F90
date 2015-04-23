@@ -34,6 +34,11 @@ contains
        call popwfninfo(mol,wfnext)
        call propts_grid(mol,mesh,mask)
        call sandbox_xdm(mol,mesh)
+    elseif (trim(adjustl(lower(line))) == "alpha") then
+       mask = .false.
+       mask(1:17) = .true.
+       call propts_grid(mol,mesh,mask)
+       call sandbox_alpha(mol,mesh)
     elseif (trim(adjustl(lower(line))) == "xdmc9") then
        mask = .false.
        mask(1:17) = .true.
@@ -76,5 +81,6 @@ contains
 #include "sandbox/cube.f90"
 #include "sandbox/cube_libxc.f90"
 #include "sandbox/energy.f90"
+#include "sandbox/alpha.f90"
 
 end module sandbox
