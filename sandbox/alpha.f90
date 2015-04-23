@@ -10,7 +10,7 @@ subroutine sandbox_alpha(mol,mesh)
   type(molecule), intent(in) :: mol !< Molecule
   type(tmesh), intent(in) :: mesh !< Associated molecular mesh.
 
-  real*8 :: m1(3,mol%nmo,mol%nmo,mol%n), m2(3,3,mol%nmo,mol%n), aaux(3)
+  real*8 :: m1(3,mol%nmo,mol%nmo), m2(3,3,mol%nmo), aaux(3)
   real*8 :: aten(3,3), atpol(mol%n), phii(mesh%n), phij(mesh%n), lam, aeval(3), aevali(3)
   integer :: ix, jx, i, j, k
   real*8 :: hirsh(mesh%n)
@@ -23,66 +23,56 @@ subroutine sandbox_alpha(mol,mesh)
   real*8 :: d, fac, rvdw, c6, c8, c10, rc
   real*8 :: c6com, c8com, c10com, xij(3), ifac, r, r1, r2
   real*8 :: e, f(3,mol%n), qfreq(3,mol%n,3,mol%n), qfac
-  real*8 :: mm(3,mol%n), q(mol%n)
+  real*8 :: mm(3,mol%n), q(mol%n), aiso, v(mol%n), vtot
+  real*8 :: sumc6
 
   ! real*8, parameter :: nubar = 7d0/18d0 ! hydrogen
   ! real*8, parameter :: nubar = 0.3d0 ! HF
   real*8, parameter :: nubar = 0.4d0 ! modified revPBE0
 
-  rewind(ihrsh)
-  do inuc = 1, mol%n
-     if (mol%z(inuc) < 1) cycle
-     read(ihrsh) (hirsh(i),i=1,mesh%n)
-
-     ! calculate the first and second moments
-     do ix = 1, 3
-        do i = 1, mol%nmo
-           ! skip to the correct MO and read it
-           rewind(iimo)
-           do k = 1, i-1
-              read(iimo) phii
-           end do
+  ! calculate the first and second moments
+  do ix = 1, 3
+     do i = 1, mol%nmo
+        ! skip to the correct MO and read it
+        rewind(iimo)
+        do k = 1, i-1
            read(iimo) phii
+        end do
+        read(iimo) phii
 
-           ! calculate the <i,i> moments
-           m1(ix,i,i,inuc) = sum(mesh%w * phii * phii * mesh%x(ix,:) * hirsh)
-           do jx = ix, 3
-              m2(ix,jx,i,inuc) = sum(mesh%w * phii * phii * mesh%x(ix,:) * mesh%x(jx,:) * hirsh)
-              m2(jx,ix,i,inuc) = m2(ix,jx,i,inuc)
-           end do
+        ! calculate the <i,i> moments
+        m1(ix,i,i) = sum(mesh%w * phii * phii * mesh%x(ix,:))
+        do jx = ix, 3
+           m2(ix,jx,i) = sum(mesh%w * phii * phii * mesh%x(ix,:) * mesh%x(jx,:))
+           m2(jx,ix,i) = m2(ix,jx,i)
+        end do
 
-           ! calculate the <i,j> moments
-           do j = i+1, mol%nmo
-              read(iimo) phij
-              m1(ix,i,j,inuc) = sum(mesh%w * phii * phij * mesh%x(ix,:) * hirsh)
-              m1(ix,j,i,inuc) = m1(ix,i,j,inuc)
-           end do
+        ! calculate the <i,j> moments
+        do j = i+1, mol%nmo
+           read(iimo) phij
+           m1(ix,i,j) = sum(mesh%w * phii * phij * mesh%x(ix,:))
+           m1(ix,j,i) = m1(ix,i,j)
         end do
      end do
-     rewind(iimo)
   end do
+  rewind(iimo)
 
   ! calulate the atomic isotropic polarizabilities
-  do inuc = 1, mol%n
-     aten = 0d0
-     do ix = 1, 3
-        do jx = ix, 3
-           do i = 1, mol%nmo
-              lam = 4d0 / (nubar - mol%eps(i))
-              aten(ix,jx) = aten(ix,jx) + lam * (m2(ix,jx,i,inuc) - sum(m1(ix,i,:,inuc) * m1(jx,:,i,inuc)))
-           end do
-           aten(jx,ix) = aten(ix,jx)
+  aten = 0d0
+  do ix = 1, 3
+     do jx = ix, 3
+        do i = 1, mol%nmo
+           lam = 4d0 / (nubar - mol%eps(i))
+           aten(ix,jx) = aten(ix,jx) + lam * (m2(ix,jx,i) - sum(m1(ix,i,:) * m1(jx,:,i)))
         end do
+        aten(jx,ix) = aten(ix,jx)
      end do
-     atpol(inuc) = (aten(1,1)+aten(2,2)+aten(3,3))/3d0
   end do
+  aiso = (aten(1,1)+aten(2,2)+aten(3,3))/3d0
   ! polarizability tensor in input orientation
   ! write (*,*) aten(1,:)
   ! write (*,*) aten(2,:)
   ! write (*,*) aten(3,:)
-
-  ! ! diagonalize and sort the eigenvalues
-  ! aiso = (aten(1,1)+aten(2,2)+aten(3,3))/3d0
   ! call eig(aten,aeval,aevali)
   ! aaux(1) = minval(aeval)
   ! aaux(3) = maxval(aeval)
@@ -94,6 +84,27 @@ subroutine sandbox_alpha(mol,mesh)
   ! end do
   ! aeval = aaux
   ! write (*,'("|",4(F7.3,"|"))') aiso, aeval
+  ! stop 1
+
+  ! volumes
+  rewind(ihrsh)
+  do inuc = 1, mol%n
+     if (mol%z(inuc) < 1) cycle
+     read(ihrsh) (hirsh(i),i=1,mesh%n)
+     v(inuc) = 0d0
+     do i = 1, mesh%n
+        r = sqrt(dot_product(mesh%x(:,i)-mol%x(:,inuc),mesh%x(:,i)-mol%x(:,inuc)))
+        v(inuc) = v(inuc) + mesh%w(i) * hirsh(i) * &
+           (mesh%rho(i,1)+mesh%rho(i,2)) * r**3
+     end do
+  end do
+
+  ! polarizabilities
+  vtot = sum(v)
+  do i = 1, mol%n
+     if (mol%z(i) < 1) cycle
+     atpol(i) = v(i) / vtot * aiso
+  enddo
 
   ! starts the xdm stuff
   call getarg(3,line)
@@ -216,6 +227,7 @@ subroutine sandbox_alpha(mol,mesh)
   e = 0d0
   f = 0d0
   q = 0d0
+  sumc6 = 0d0
   do i = 1, mol%n
      if (mol%z(i) < 1) cycle
      do j = i, mol%n
@@ -230,6 +242,11 @@ subroutine sandbox_alpha(mol,mesh)
         rc = (sqrt(c8/c6) + sqrt(sqrt(c10/c6)) +&
            sqrt(c10/c8)) / 3.D0
         rvdw = c1br * rc + c2br
+        if (i == j) then
+           sumc6 = sumc6 + c6
+        else
+           sumc6 = sumc6 + 2d0 * c6
+        endif
         if (d > 1d-5) then
            e = e - c6 / (rvdw**6 + d**6) - c8 / (rvdw**8+d**8) - &
               c10 / (rvdw**10 + d**10)
@@ -258,6 +275,8 @@ subroutine sandbox_alpha(mol,mesh)
            i, j, d, c6, c8, c10, rc, rvdw
      end do
   end do
+  write (iout,'("#")')
+  write (iout,'("dimer c6 ",F12.6)') sumc6
   write (iout,'("#")')
 
   ! sum rules for the second derivatives

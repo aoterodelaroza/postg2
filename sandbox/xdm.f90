@@ -17,7 +17,8 @@ subroutine sandbox_xdm(mol,mesh)
   real*8 :: c6com, c8com, c10com, xij(3), ifac, r, r1, r2
   real*8 :: e, f(3,mol%n), qfreq(3,mol%n,3,mol%n), qfac
   real*8 :: mm(3,mol%n), v(mol%n), q(mol%n)
-  real*8 :: hirsh(mesh%n)
+  real*8 :: hirsh(mesh%n), vtot
+  real*8 :: sumc6
 
   call getarg(3,line)
   read (line,*,end=999,err=999) c1br
@@ -133,6 +134,14 @@ subroutine sandbox_xdm(mol,mesh)
      if (mol%z(i) < 1) cycle
      atpol(i) = v(i) * frepol(mol%z(i)) / frevol(mol%z(i))
   enddo
+
+  ! print out the polarizabilities
+  write (iout,'("atomic polarizabilities ")')
+  write (iout,'("# i At        Polariz.")')
+  do i = 1, mol%n
+     write (iout,'(I3,X,A2,X,F10.4)') i, ptable(mol%z(i)), atpol(i)
+  enddo
+  write (iout,'("#")')
   write (iout,'("molecular polarizability ",F12.6)') sum(atpol(1:mol%n))
   write (iout,'("#")')
 
@@ -142,6 +151,7 @@ subroutine sandbox_xdm(mol,mesh)
   e = 0d0
   f = 0d0
   q = 0d0
+  sumc6 = 0d0
   do i = 1, mol%n
      if (mol%z(i) < 1) cycle
      do j = i, mol%n
@@ -156,6 +166,11 @@ subroutine sandbox_xdm(mol,mesh)
         rc = (sqrt(c8/c6) + sqrt(sqrt(c10/c6)) +&
            sqrt(c10/c8)) / 3.D0
         rvdw = c1br * rc + c2br
+        if (i == j) then
+           sumc6 = sumc6 + c6
+        else
+           sumc6 = sumc6 + 2d0 * c6
+        endif
         if (d > 1d-5) then
            e = e - c6 / (rvdw**6 + d**6) - c8 / (rvdw**8+d**8) - &
               c10 / (rvdw**10 + d**10)
@@ -184,6 +199,8 @@ subroutine sandbox_xdm(mol,mesh)
            i, j, d, c6, c8, c10, rc, rvdw
      end do
   end do
+  write (iout,'("#")')
+  write (iout,'("dimer c6 ",F12.6)') sumc6
   write (iout,'("#")')
 
   ! sum rules for the second derivatives
