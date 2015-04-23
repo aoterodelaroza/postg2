@@ -27,8 +27,8 @@ subroutine sandbox_alpha(mol,mesh)
   real*8 :: sumc6
 
   ! real*8, parameter :: nubar = 7d0/18d0 ! hydrogen
-  ! real*8, parameter :: nubar = 0.3d0 ! HF
-  real*8, parameter :: nubar = 0.4d0 ! modified revPBE0
+  real*8, parameter :: nubar = 0.3d0 ! HF
+  ! real*8, parameter :: nubar = 0.4d0 ! modified revPBE0
 
   ! calculate the first and second moments
   do ix = 1, 3
@@ -105,6 +105,11 @@ subroutine sandbox_alpha(mol,mesh)
      if (mol%z(i) < 1) cycle
      atpol(i) = v(i) / vtot * aiso
   enddo
+  ! atpol = (/5.56d0, 7.89d0/) ! co, from hesselmann2012 (C,O)
+  ! atpol = (/ 6.31d0, 7.03d0, 7.03d0/) ! co2, from hesselmann2012 (C,O,O)
+  ! atpol = (/ 5.61d0, 2.36d0, 2.36d0 /) ! h2o, from hesselmann2012 (O,H,H)w
+  ! atpol = (/ 8.46d0, 8.46d0, 2.48d0, 2.48d0 /) ! c2h2, from hesselmann2012 (C,C,H,H)
+  ! atpol = (/ 7.27d0, 7.27d0, 2.72d0, 2.72d0, 2.72d0, 2.72d0 /) ! c2h4, from hesselmann2012 (C,C,H,H,H,H)
 
   ! starts the xdm stuff
   call getarg(3,line)
