@@ -204,7 +204,7 @@ subroutine sandbox_alpha(mol,mesh)
   write (iout,'("atomic polarizabilities ")')
   write (iout,'("# i At        Polariz.")')
   do i = 1, mol%n
-     write (iout,'(I3,X,A2,X,F10.4))') i, ptable(mol%z(i)), atpol(i)
+     write (iout,'(I3,X,A2,X,F10.4)') i, ptable(mol%z(i)), atpol(i)
   enddo
   write (iout,'("#")')
   write (iout,'("molecular polarizability ",F12.6)') sum(atpol(1:mol%n))
