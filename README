@@ -1,0 +1,95 @@
+postg2 is a sandbox program for trying different things with wfx/wfn
+wavefunction files obtained from gas-phase quantum mechanical
+calculations, mostly DFT.
+
+The syntax is:
+
+postg2 bleh.{wfx/wfn/tcfchk} command options
+
+* info
+
+  # Give some information about the wfn
+
+  info
+
+* xdm.f90 
+
+  # Calculate the dispersion coefficients, XDM energy and derivatives
+
+  xdm a1 a2 functional
+
+* xdmc9.f90
+
+  # Hack for 3-body coefficients and energies of water
+  # trimers. Super-dirty, stay away.
+
+* xyz.f90
+
+  # Write the molecular geometry to standard output in the form of an 
+  # xyz file.
+
+  xyz
+
+* atomicb.f90
+
+  # Fun with the BR model in atoms. Nothing to see here. Move along,
+  # citizen.  
+
+* points.f90
+
+  # Calculate a point using the selected property. See
+  # properties_list.org for a list of those.
+
+  {point/points} property <<eof
+x1 y2 z2
+...
+eof
+
+* line.f90
+
+  # Calculate a line using the selected property
+
+  line property x0 y0 z0 x1 y1 z1 npts
+
+* plane.f90
+
+  # Calculate a plane using the selected property
+
+  plane property x0 y0 z0 x1 y1 z1 x2 y2 z2 n1 n2
+
+* cube.f90
+
+  # Calculate a cube using the selected property
+  # (all units are angstroms)
+  # You can use another cube as template for the grid. 
+
+  cube property step
+  cube property step x0 y0 z0 x1 y1 z1
+  cube property other.cube
+    
+* cube_libxc.f90
+
+  # Calculate the functional energy density on a cube.
+
+  cube_libxc ix ic step
+  cube_libxc ix ic step x0 y0 z0 x1 y1 z1 (bohr)
+  cube_libxc ix ic other.cube
+
+* energy.f90
+
+  # Calculate the energy components
+
+  energy ...
+  ... charge (total charge)
+  ... mocharge (charge in each MO, for debugging)
+  ... ekin (kintic energy)
+  ... enn (n-n coulomb energy)
+  ... een (e-n coulomb energy -> has issues with the grid)
+  ... eee (e-e coulomb energy)
+  ... ebr (classic BR exchange)
+  ... exx (exact exchange -> takes forever)
+  ... libxc id (exc from libxc, with functional id.
+                see properties_list.org)
+
+
+
