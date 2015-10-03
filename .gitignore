@@ -4,3 +4,5 @@
 postg2
 postg2_dbg
 
+# emacs backups
+*~
